@@ -1,4 +1,5 @@
 const Sauce = require('../models/Sauce')
+const sauceServices = require('../services/sauce')
 const fs = require('fs')
 
 exports.getAllSauces = (req, res) =>{
@@ -22,69 +23,78 @@ exports.getOneSauce = (req, res) =>{
 }
 
 exports.createSauce = (req, res) =>{
-  const sauceObject = JSON.parse(req.body.sauce)
-  delete sauceObject._id
-  const sauce = new Sauce({
-    ...sauceObject,
-    userId: req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-    likes: 0,
-    dislikes: 0,
-    usersLiked: [],
-    usersDisliked: []
-  })
-  sauce.save()
-    .then( sauce => {
-      const message = `La sauce ${sauce.name} a été ajouté avec succès`
-      res.json({ message, sauce })
-    })
-    .catch( error => res.status(500).json({ error }) )
+  const sauce = req.body.sauce
+  const errorTabs = []
+
+  if(!sauce.name || sauce.name === ''){
+    errorTabs.push('name')
+  }else if(!sauce.manufacturer || sauce.manufacturer === ''){
+    errorTabs.push('manufacturer')
+  }else if(!sauce.description || sauce.description === ''){
+    errorTabs.push('description')
+  }else if(!sauce.mainPepper || sauce.mainPepper === ''){
+    errorTabs.push('main pepper ingredient')
+  }else if(!sauce.heat || sauce.heat === 0){
+    errorTabs.push('heat')
+  }else if(!req.file){
+    errorTabs.push('image')
+  }
+
+  if(errorTabs.length === 1){
+    const message = `La requête est incomplète, veuillez renseigner le champ ${errorTabs[0]}.`
+    return res.status(400).json({ message })
+  }
+  if(errorTabs.length > 1){
+    const message = `La requête est incomplète, veuillez renseigner les champs ${errorTabs.join(', ')}.`
+    return res.status(400).json({ message })
+  }
+
+  sauceServices.saveSauce(req, res)
 }
 
 exports.updateSauce = (req, res) =>{
-    const id = req.params.id
-    if(req.file){
-      const sauceUpdated = {
-        ...JSON.parse(req.body.sauce),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-      }
-      console.log(sauceUpdated)
-      delete sauceUpdated.userId
-      Sauce.findOne({ _id: id })
-        .then( sauce => {
-          if(sauce.userId != req.auth.userId){
-            const message = `Vous n'êtes pas autorisé à modifier cette sauce`
-            return res.status(401).json({ message })
-          }
-          const filename = sauce.imageUrl.split('/images/')[1]
-          fs.unlink(`back/images/${filename}`, () => {
-            return Sauce.updateOne({ _id: id }, { ...sauceUpdated, _id: id})
-            .then( () => {
-              const message = `La sauce ${sauce.name} a été modifiée avec succès`
-              res.json({ message, data: sauce })
-            })
-          })
-        })
-        .catch( error => res.status(500).json({ message, error }) )
-    } else {
-      const sauceUpdated = {
-        ...req.body
-      }
-      delete sauceUpdated.userId
-      Sauce.findOne({ _id: id })
-        .then( sauce => {
-          if(sauce.userId != req.auth.userId){
-            const message = `Vous n'êtes pas autorisé à modifier cette sauce`
-            return res.status(401).json({ message })
-          }
-          return Sauce.updateOne({ _id: id }, { ...sauceUpdated, _id: id})
-            .then( () => {
-              const message = `La sauce ${sauce.name} a été modifiée avec succès`
-              res.json({ message, data: sauce })
-            })
-        })
-        .catch( error => res.status(500).json({ error }) )
+  let sauceUpdated={}
+
+  if(req.file){
+    sauceUpdated = {
+      ...JSON.parse(req.body.sauce),
+      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     }
+  }else{
+    sauceUpdated = {
+      ...req.body
+    }
+  }
+  delete sauceUpdated.userId
+
+  const errorTabs = []
+
+  if(!sauceUpdated.name || sauceUpdated.name === ''){
+    errorTabs.push('name')
+  }else if(!sauceUpdated.manufacturer || sauceUpdated.manufacturer === ''){
+    errorTabs.push('manufacturer')
+  }else if(!sauceUpdated.description || sauceUpdated.description === ''){
+    errorTabs.push('description')
+  }else if(!sauceUpdated.mainPepper || sauceUpdated.mainPepper === ''){
+    errorTabs.push('main pepper ingredient')
+  }else if(!sauceUpdated.heat || sauceUpdated.heat === 0){
+    errorTabs.push('heat')
+  }
+
+  if(errorTabs.length === 1){
+    const message = `La requête est incomplète, veuillez renseigner le champ ${errorTabs[0]}.`
+    return res.status(400).json({ message })
+  }
+  if(errorTabs.length > 1){
+    const message = `La requête est incomplète, veuillez renseigner les champs ${errorTabs.join(', ')}.`
+    return res.status(400).json({ message })
+  }
+
+  if(sauceUpdated.imageUrl){
+    sauceServices.updateWithFile(req, res, sauceUpdated)
+  }else{
+    sauceServices.updateWithoutFile(req, res, sauceUpdated)
+  }
 }
 
 exports.deleteSauce = (req, res) =>{
@@ -109,70 +119,10 @@ exports.deleteSauce = (req, res) =>{
 }
 
 exports.likeSauce = (req, res) =>{
-  const userId = req.body.userId
-  const avis = parseInt(req.body.like)
-  Sauce.findOne({ _id: req.params.id })
-  .then( sauce => {
-    if(avis === 1){
-      console.log(sauce)
-      let newTabs = [...sauce.usersLiked]
-      newTabs.push(userId)
-      const sauceObject = {
-        ...sauce,
-        usersLiked: newTabs
-      }
-      console.log(sauceObject)
-      return Sauce.updateOne({ _id: req.params.id }, {
-        $push: {
-          usersLiked: userId
-        },
-        $inc: {
-          likes: +1
-        }
-       }).then( () => {
-          const message = `Votre like a été ajouté`
-          res.json({ message })
-        })
-    }else if(avis === -1){
-      return Sauce.updateOne({ _id: req.params.id }, {
-      $push: {
-        usersDisliked: userId
-      },
-      $inc: {
-        dislikes: +1
-      }
-    }).then( () => {
-      const message = `Votre dislike a été ajouté`
-      res.json({ message })
-    })
-    }else{
-      if(sauce.usersLiked.includes(userId)){
-        return Sauce.updateOne({ _id: req.params.id }, {
-          $pull: {
-            usersLiked: userId
-          },
-          $inc: {
-            likes: -1
-          }
-        }).then( () => {
-          const message = `Votre like a été retiré`
-          res.json({ message })
-        })
-      }
-      if(sauce.usersDisliked.includes(userId)){
-        return Sauce.updateOne({ _id: req.params.id }, {
-          $pull: {
-            usersDisliked: userId
-          },
-          $inc: {
-            dislikes: -1
-          }
-        }).then( () => {
-          const message = `Votre dislike a été retiré`
-          res.json({ message })
-        })
-      }
-    }
-  })
-  .catch( error => res.status(500).json({ error }) )
+  if((!req.body.userId || req.body.userId === '') || (!req.body.like || req.body.like === '')){
+    const message = `La requête est incomplète`
+    return res.status(400).json({ message })
+  }
+
+  sauceServices.like(req, res)
 }
