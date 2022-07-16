@@ -1,53 +1,43 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken')
-const privateKey = require('../middleware/auth/private_key')
+const sauceServices = require('../services/user')
 
-const User = require('../models/User');
 
+/**
+ * Vérifie le contenu de la requête pour l'inscription d'un utilisateur.
+ * Si la requête correspond à ce qui est attendu, appel la fonction addUser().
+ * Sinon retourne un status 400 et un message d'erreur approprié.
+ *
+ * @param {req} req La requête reçue du front.
+ * @param {res} res La réponse renvoyée au front.
+ */
 exports.signup = (req, res) => {
-  bcrypt.hash(req.body.password, 10)
-    .then( hash => {
-      const user = new User({
-        email: req.body.email,
-        password: hash
-      })
-      return user.save()
-        .then( () => {
-          const message = `L'utilisateur ${req.body.email} a été créé !`
-          res.json({ message })
-        })
-    })
-    .catch( error => {
-      if(error.name === 'ValidationError'){
-        const message = `Cette adresse email est déjà utilisée.`
-        return res.status(400).json({ message, error})
-      }
-      res.status(500).json({ error })
-    })
+  //si la requête ne contient pas un email valide ou un mot de passe valide
+  if((!req.body.email || req.body.email === '') || (!req.body.password || req.body.password === '')){
+    //retourne une erreur
+    const message = `La requête est incomplète`
+    return res.status(400).json({ message })
+  }
+
+  //appel de la fonction addUser()
+  sauceServices.addUser(req, res)
 }
 
+
+/**
+ * Vérifie le contenu de la requête pour la connexion d'un utilisateur.
+ * Si la requête correspond à ce qui est attendu, appel la fonction logon().
+ * Sinon retourne un status 400 et un message d'erreur approprié.
+ *
+ * @param {req} req La requête reçue du front.
+ * @param {res} res La réponse renvoyée au front.
+ */
 exports.login = (req, res) => {
-  User.findOne({ email: req.body.email })
-    .then( user => {
-      if(!user){
-        const message = `Paire utilisateur/mot de passe incorrecte`
-        res.status(401).json({ message })
-      } else {
-        return bcrypt.compare(req.body.password, user.password)
-          .then( valid => {
-            if(!valid){
-              const message = `Paire utilisateur/mot de passe incorrecte`
-              res.status(401).json({ message })
-            } else {
-              const token = jwt.sign(
-                { userId: user._id },
-                privateKey,
-                { expiresIn: '24h' }
-              )
-              return res.json({ userId: user._id, token })
-            }
-          })
-      }
-    })
-    .catch( error => res.status(500).json({ error }) )
+  //si la requête ne contient pas un email valide ou un mot de passe valide
+  if((!req.body.email || req.body.email === '') || (!req.body.password || req.body.password === '')){
+    //retourne une erreur
+    const message = `La requête est incomplète`
+    return res.status(400).json({ message })
+  }
+
+  //appel de la fonction logon()
+  sauceServices.logon(req, res)
 }
