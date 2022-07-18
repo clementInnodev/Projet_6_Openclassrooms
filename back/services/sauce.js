@@ -69,7 +69,7 @@ exports.updateWithFile = (req, res, sauceUpdated) => {
         return Sauce.updateOne({ _id: req.params.id }, { ...sauceUpdated, _id: req.params.id})
         .then( () => {
           const message = `La sauce ${sauce.name} a été modifiée avec succès`
-          res.json({ message, data: sauce })
+          res.json({ message })
         })
       })
     })
@@ -102,7 +102,7 @@ exports.updateWithoutFile = (req, res, sauceUpdated) => {
       return Sauce.updateOne({ _id: req.params.id }, { ...sauceUpdated, _id: req.params.id})
         .then( () => {
           const message = `La sauce ${sauce.name} a été modifiée avec succès`
-          res.json({ message, data: sauce })
+          res.json({ message })
         })
     })
     .catch( error => res.status(500).json({ error }) )

@@ -30,7 +30,7 @@ exports.getOneSauce = (req, res) =>{
       // Vérifie si la sauce avec l'id fourni existe bien
       if(sauce === null){
         const message = `La sauce n°${req.params.id} n'existe pas.`
-        return res.status(400).json({ message })
+        return res.status(404).json({ message })
       }
       res.json( sauce )
     })

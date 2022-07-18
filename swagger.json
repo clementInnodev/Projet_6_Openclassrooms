@@ -1,0 +1,549 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Projet 6 Openclassrooms API",
+    "description": "API rest développée en nodeJS pour la marque de condiments 'Piquante' et son application web de critique de sauces piquantes 'Hot Takes'",
+    "version": "1.0.0"
+  },
+  "host": "localhost:3000",
+  "basePath": "/api",
+  "schemes": ["http"],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "servers": {
+    "url": "http://localhost:3000"
+  },
+  "paths":{
+    "/auth/signup":{
+      "post": {
+        "summary": "Inscription utilisateur",
+        "descritpion": "Ajoute un nouvel utilisateur en base de donnée / crypte le mot de passe afin qu'il ne soit pas stocké en clair",
+        "parameters":[
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Adresse email permettant d'identifier l'utilisateur"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Mot de passe de l'utilisateur"
+          }
+        ],
+        "responses": {
+          "200":{
+            "description": "L'utilisateur a bien été ajouté à la base de donnée",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "L'utilisateur n'a pas pu être ajouté à la base de donnée suite à une mauvaise manipulation de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    },
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "L'utilisateur n'a pas pu être ajouté à la base de donnée suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login":{
+      "post": {
+        "summary": "Connexion utilisateur",
+        "descritpion": "Récupère les données de l'utilisateur en base de donnée / décrypte le mot de passe / vérifie la concordance et accepte la connexion ou la refuse",
+        "parameters":[
+          {
+            "name": "email",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Adresse email permettant d'identifier l'utilisateur"
+          },
+          {
+            "name": "password",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Mot de passe de l'utilisateur"
+          }
+        ],
+        "responses": {
+          "200":{
+            "description": "L'utilisateur a bien été connecté",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "L'utilisateur n'a pas pu être connecté suite à une mauvaise manipulation",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    },
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "L'utilisateur n'a pas pu être connecté suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sauces":{
+      "get": {
+        "summary": "Récupère toutes les sauces",
+        "descritpion": "Récupère un tableau contenant toutes les sauces présentes en base de donnée",
+        "responses": {
+          "200":{
+            "description": "La liste de toutes les sauces a bien été récupérée",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "array",
+                  "properties":{
+                    "sauce":{
+                      "type": "object",
+                      "description": "Chaque sauce avec toutes ses propiétés"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "La liste de toutes les sauces n'a pas pu être récupérée suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Création d'une nouvelle sauce",
+        "descritpion": "Création d'une nouvelle sauce et l'ajoute à la base de donnée",
+        "parameters":[
+          {
+            "name": "sauce",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Chaine de caractère représentant la sauce à mettre à jour / doit être parsé pour récupérer l'objet JSON"
+          },
+          {
+            "name": "image",
+            "in": "query",
+            "required": true,
+            "type": "file",
+            "description": "Une image de la sauce"
+          }
+        ],
+        "responses": {
+          "200":{
+            "description": "La nouvelle sauce a été ajoutée à la base de donnée avec succès",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "La nouvelle sauce n'a pas pu être ajoutée à la base de donnée suite à une mauvaise manipulation de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "La nouvelle sauce n'a pas pu être ajoutée à la base de donnée suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sauces/{id}":{
+      "get": {
+        "summary": "Récupère une sauce",
+        "descritpion": "Récupère la sauce dont l'id est passé en paramètre",
+        "responses": {
+          "200":{
+            "description": "La sauce a été récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404":{
+            "description": "La sauce dont l'id est passé en paramètre n'existe pas",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "La nouvelle sauce n'a pas pu être ajoutée à la base de donnée suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Met à jour une sauce",
+        "descritpion": "Met à jour une sauce dont l'id est passé en paramètre en base de donnée",
+        "parameters":[
+          {
+            "name": "sauce",
+            "in": "query",
+            "required": true,
+            "type": "string or object",
+            "description": "Chaine de caractère représentant la sauce à mettre à jour / peut-être une string si une nouvelle image est renseignée ou un objet JSON si ce n'est pas le cas "
+          },
+          {
+            "name": "image",
+            "in": "query",
+            "required": false,
+            "type": "file",
+            "description": "Une image de la sauce"
+          }
+        ],
+        "responses": {
+          "200":{
+            "description": "La sauce a été mise à jour avec succès",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400":{
+            "description": "La sauce n'a pas pu être mise à jour suite à une erreur de manipulation de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401":{
+            "description": "La sauce n'a pas pu être mise à jour suite à une erreur d'autorisation / l'utilisateur ne dispose pas des droits nécessaires pour mettre à jour la sauce",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "La sauce n'a pas pu être mise à jour suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Supprime une sauce",
+        "descritpion": "Supprime une sauce sont l'id est passé en paramètre de la base de donnée",
+        "responses": {
+          "200":{
+            "description": "La sauce a été supprimée avec succès",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404":{
+            "description": "La sauce dont l'id est passé en paramètre n'existe pas et n'a donc pas pu être supprimé",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401":{
+            "description": "La sauce n'a pas pu être supprimé suite à une erreur d'autorisation / l'utilisateur ne dispose pas des droits nécessaires pour mettre à jour la sauce",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message d'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "La sauce n'a pas pu supprimé suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/sauces/{id}/like":{
+      "post": {
+        "summary": "Like une sauce",
+        "descritpion": "Permet à un utilisateur de like / dislike une sauce dont l'id est passé en paramètre ou de retirer un like / dislike",
+        "parameters":[
+          {
+            "name": "userId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "l'id de l'utilisateur tentant de like la sauce"
+          },
+          {
+            "name": "like",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "description": "la valeur du like envoyé par l'utilisateur / (if = 1) = like; (if = -1) = dislike; (if = 0) = annule le like ou le dislike;"
+          }
+        ],
+        "responses": {
+          "200":{
+            "description": "Un like / dislike a été ajouté avec succès",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "message":{
+                      "type": "string",
+                      "description": "Message de succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500":{
+            "description": "Le like / dislike n'a pas pu être ajouté suite à un problème serveur",
+            "content": {
+              "application/json": {
+                "schema":{
+                  "type": "object",
+                  "properties":{
+                    "error":{
+                      "type": "object",
+                      "description": "Objet contenant toutes les propriétés de l'erreur"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
