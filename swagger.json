@@ -3,8 +3,7 @@
   "info": {
     "version": "1.0.0",
     "title": "Projet 6 Openclassrooms API",
-    "description": "API rest développée en nodeJS pour la marque de condiments 'Piquante' et son application web de critique de sauces piquantes 'Hot Takes'",
-    "version": "1.0.0"
+    "description": "API rest développée en nodeJS pour la marque de condiments 'Piquante' et son application web de critique de sauces piquantes 'Hot Takes'"
   },
   "host": "localhost:3000",
   "basePath": "/api",

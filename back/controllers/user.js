@@ -1,4 +1,4 @@
-const sauceServices = require('../services/user')
+const userServices = require('../services/user')
 
 
 /**
@@ -18,7 +18,7 @@ exports.signup = (req, res) => {
   }
 
   //appel de la fonction addUser()
-  sauceServices.addUser(req, res)
+  userServices.addUser(req, res)
 }
 
 
@@ -39,5 +39,5 @@ exports.login = (req, res) => {
   }
 
   //appel de la fonction logon()
-  sauceServices.logon(req, res)
+  userServices.logon(req, res)
 }

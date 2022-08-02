@@ -64,7 +64,7 @@ exports.updateWithFile = (req, res, sauceUpdated) => {
       const filename = sauce.imageUrl.split('/images/')[1]
 
       //supprime l'ancienne image de la sauce
-      fs.unlink(`back/images/${filename}`, () => {
+      return fs.unlink(`back/images/${filename}`, () => {
         //met à jour la sauce avec ses nouvelles propriétés
         return Sauce.updateOne({ _id: req.params.id }, { ...sauceUpdated, _id: req.params.id})
         .then( () => {
