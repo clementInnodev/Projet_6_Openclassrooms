@@ -3,9 +3,20 @@ const mongoose = require('mongoose')
 const dbName = 'Clement'
 const mdp = 'projet6'
 
-//connexion à la base de donnée mongoDB
-module.exports = mongoose.connect(`mongodb+srv://${dbName}:${mdp}@cluster0.3t6fs19.mongodb.net/?retryWrites=true&w=majority`,
-  { useNewUrlParser: true,
-    useUnifiedTopology: true })
-  .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch(() => console.log('Connexion à MongoDB échouée !'))
+exports.mongooseInit = (server, port, errorHandler) => {
+    mongoose.connect(`mongodb+srv://${dbName}:${mdp}@cluster0.3t6fs19.mongodb.net/?retryWrites=true&w=majority`, {})
+    .then( _ => {
+        console.log('Connexion à MongoDB réussie !')
+
+        const serv = server.listen(port)
+
+        serv.on('error', errorHandler);
+        serv.on('listening', () => {
+            const address = serv.address();
+            const bind = typeof address === 'string' ? 'pipe ' + address : 'port ' + port;
+            console.log('Listening on ' + bind);
+        });
+
+    })
+    .catch(error => console.log('Connexion à MongoDB échouée !', error))
+}

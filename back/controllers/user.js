@@ -1,43 +1,72 @@
 const userServices = require('../services/user')
-
+const { validationResult } = require('express-validator')
+const { errorName } = require('../utils/error-name')
 
 /**
- * Vérifie le contenu de la requête pour l'inscription d'un utilisateur.
- * Si la requête correspond à ce qui est attendu, appel la fonction addUser().
- * Sinon retourne un status 400 et un message d'erreur approprié.
+ * gestion des erreurs de validation des données de la requête.
+ * transmet les données du nouvel utilisateur au service pour ajout en bdd.
  *
  * @param {req} req La requête reçue du front.
  * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
  */
-exports.signup = (req, res) => {
-  //si la requête ne contient pas un email valide ou un mot de passe valide
-  if((!req.body.email || req.body.email === '') || (!req.body.password || req.body.password === '')){
-    //retourne une erreur
-    const message = `La requête est incomplète`
-    return res.status(400).json({ message })
-  }
+exports.signup = async (req, res, next) => {
+    try {
 
-  //appel de la fonction addUser()
-  userServices.addUser(req, res)
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const email = req.body.email
+        const password = req.body.password
+        
+        const message = await userServices.addUser(email, password)
+
+        return res.status(200).json({message})
+
+    } catch (error) {
+
+        next(error)
+
+    }
 }
 
 
 /**
- * Vérifie le contenu de la requête pour la connexion d'un utilisateur.
- * Si la requête correspond à ce qui est attendu, appel la fonction logon().
- * Sinon retourne un status 400 et un message d'erreur approprié.
+ * gestion des erreurs de validation des données de la requête.
+ * transmet au service les données de l'utilisateur pour valider la connexion.
  *
  * @param {req} req La requête reçue du front.
  * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
  */
-exports.login = (req, res) => {
-  //si la requête ne contient pas un email valide ou un mot de passe valide
-  if((!req.body.email || req.body.email === '') || (!req.body.password || req.body.password === '')){
-    //retourne une erreur
-    const message = `La requête est incomplète`
-    return res.status(400).json({ message })
-  }
+exports.login = async (req, res, next) => {
+    try {
 
-  //appel de la fonction logon()
-  userServices.logon(req, res)
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const email = req.body.email
+        const password = req.body.password
+        
+        const data = await userServices.logon(email, password)
+
+        return res.status(200).json(data)
+
+    } catch (error) {
+
+        next(error)
+        
+    }
 }

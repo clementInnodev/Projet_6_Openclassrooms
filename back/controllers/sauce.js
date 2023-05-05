@@ -1,210 +1,260 @@
-const Sauce = require('../models/Sauce')
 const sauceServices = require('../services/sauce')
-const fs = require('fs')
+const { validationResult } = require('express-validator')
+const fileUtils = require('../utils/delete-file')
+const { errorName } = require('../utils/error-name')
 
 
 /**
- * récupère toutes les sauces présente dans la base de donnée
+ * retourne au front toutes les sauces présente dans la base de données.
  *
  * @param {req} req La requête reçue du front.
  * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
  */
-exports.getAllSauces = (req, res) =>{
-  Sauce.find()
-  .then( sauces => {
-    res.json( sauces )
-  })
-  .catch( error => res.status(500).json({ error }) )
-}
+exports.getAllSauces = async (req, res, next) =>{
+    try {
 
+        const sauces = await sauceServices.getAll()
 
-/**
- * récupère la sauce avec l'id passé en paramètre
- *
- * @param {req} req La requête reçue du front.
- * @param {res} res La réponse renvoyée au front.
- */
-exports.getOneSauce = (req, res) =>{
-  Sauce.findOne({_id: req.params.id})
-    .then( sauce => {
-      // Vérifie si la sauce avec l'id fourni existe bien
-      if(sauce === null){
-        const message = `La sauce n°${req.params.id} n'existe pas.`
-        return res.status(404).json({ message })
-      }
-      res.json( sauce )
-    })
-    .catch( error => res.status(500).json({ error }) )
-}
+        return res.status(200).json(sauces)
 
+    } catch (error) {
 
-/**
- * Vérifie le contenu de la requête pour la création d'une sauce.
- * Si la requête correspond à ce qui est attendu, appel la fonction saveSauce() pour ajouter la sauce à la bdd.
- * Sinon retourne un status 400 et un message d'erreur approprié.
- *
- * @param {req} req La requête reçue du front.
- * @param {res} res La réponse renvoyée au front.
- */
-exports.createSauce = (req, res) =>{
-  //création de l'objet JSON 'sauce'
-  const sauce = {
-    ...JSON.parse(req.body.sauce)
-  }
+        next(error)
 
-  //création du tableau qui contiendra la liste des différentes erreurs éventuelles
-  const errorTabs = []
-
-  //vérification de toutes les erreurs possibles et ajout au tableau listant les erreurs
-  if(!sauce.name || sauce.name === ''){
-    errorTabs.push('name')
-  }
-  if(!sauce.manufacturer || sauce.manufacturer === ''){
-    errorTabs.push('manufacturer')
-  }
-  if(!sauce.description || sauce.description === ''){
-    errorTabs.push('description')
-  }
-  if(!sauce.mainPepper || sauce.mainPepper === ''){
-    errorTabs.push('main pepper ingredient')
-  }
-  if(!sauce.heat || sauce.heat === 0){
-    errorTabs.push('heat')
-  }
-  if(!req.file){
-    errorTabs.push('image')
-  }
-
-  //traitement des erreurs trouvées
-  if(errorTabs.length === 1){
-    const message = `La requête est incomplète, veuillez renseigner le champ ${errorTabs[0]}.`
-    return res.status(400).json({ message })
-  }
-  if(errorTabs.length > 1){
-    const message = `La requête est incomplète, veuillez renseigner les champs ${errorTabs.join(', ')}.`
-    return res.status(400).json({ message })
-  }
-
-  //appel de la fonction saveSauce()
-  sauceServices.saveSauce(req, res)
-}
-
-
-/**
- * Vérifie le contenu de la requête pour la mise à jour d'une sauce.
- * Si la requête correspond à ce qui est attendu, appel la fonction updateWithFile() ou updateWithoutFile() pour modifier la sauce.
- * Sinon retourne un status 400 et un message d'erreur approprié.
- *
- * @param {req} req La requête reçue du front.
- * @param {res} res La réponse renvoyée au front.
- */
-exports.updateSauce = (req, res) =>{
-  let sauceUpdated={}
-
-  //vérifie si la requête contient une nouvelle image et crée la nouvelle sauce en fonction
-  if(req.file){
-    sauceUpdated = {
-      ...JSON.parse(req.body.sauce),
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     }
-  }else{
-    sauceUpdated = {
-      ...req.body
-    }
-  }
-
-  //supprime la propriété userId de la nouvelle sauce
-  delete sauceUpdated.userId
-
-  //création du tableau qui contiendra la liste des différentes erreurs éventuelles
-  const errorTabs = []
-
-  //vérification de toutes les erreurs possibles et ajout au tableau listant les erreurs
-  if(!sauceUpdated.name || sauceUpdated.name === ''){
-    errorTabs.push('name')
-  }
-  if(!sauceUpdated.manufacturer || sauceUpdated.manufacturer === ''){
-    errorTabs.push('manufacturer')
-  }
-  if(!sauceUpdated.description || sauceUpdated.description === ''){
-    errorTabs.push('description')
-  }
-  if(!sauceUpdated.mainPepper || sauceUpdated.mainPepper === ''){
-    errorTabs.push('main pepper ingredient')
-  }
-  if(!sauceUpdated.heat || sauceUpdated.heat === 0){
-    errorTabs.push('heat')
-  }
-
-  //traitement des erreurs trouvées
-  if(errorTabs.length === 1){
-    const message = `La requête est incomplète, veuillez renseigner le champ ${errorTabs[0]}.`
-    return res.status(400).json({ message })
-  }
-  if(errorTabs.length > 1){
-    const message = `La requête est incomplète, veuillez renseigner les champs ${errorTabs.join(', ')}.`
-    return res.status(400).json({ message })
-  }
-
-  //vérifie si la sauce modifiée contient une nouvelle image ou non
-  if(sauceUpdated.imageUrl){
-    //si la sauce contient une nouvelle image, appel de la fonction updateWithFile()
-    sauceServices.updateWithFile(req, res, sauceUpdated)
-  }else{
-    //si la sauce ne contient pas de nouvelle image, appel de la fonction updateWithoutFile()
-    sauceServices.updateWithoutFile(req, res, sauceUpdated)
-  }
 }
 
 
 /**
- * Supprime la sauce dont l'id est passé en paramètre.
+ * gestion des erreurs de validation des données de la requête.
+ * retourne au front la sauce avec l'id passé en paramètre de l'url de la requête.
  *
  * @param {req} req La requête reçue du front.
  * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
  */
-exports.deleteSauce = (req, res) =>{
-  //l'id de la sauce à supprimer
-  const id = req.params.id
-  //récupère la sauce en question
-  Sauce.findOne({ _id: id })
-  .then( sauce => {
-    //vérifie si l'utilisateur qui récupère la sauce n'est pas celui qui l'a créée initialement
-    if (sauce.userId != req.auth.userId){
-      //si ce n'est pas le même utilisateur retourne une erreur d'autorisation
-      const message = `Vous n'êtes pas autorisé à supprimer cette sauce`
-      res.status(401).json({ message })
-    } else {
-      //si c'est le même utilisateur
-      const filename = sauce.imageUrl.split('/images/')[1]
-      //supprime l'image de la sauce dans le dossier
-      fs.unlink(`back/images/${filename}`, () => {
-        //puis supprime la sauce de la base de donnée
-        return Sauce.deleteOne({ _id: id })
-        .then( () => {
-          const message = `La sauce ${sauce.name} a été supprimé avec succès`
-          res.json({ message, data: sauce })
-        })
-      })
+exports.getOneSauce = async (req, res, next) =>{
+    try {
+
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const id = req.params.id
+
+        const sauce = await sauceServices.getOne(id)
+
+        return res.status(200).json(sauce)
+
+    } catch (error) {
+
+        next(error)
+
     }
-  })
-  .catch( error => res.status(500).json({ error }) )
 }
 
 
 /**
- * Vérifie le contenu de la requête pour la gestion des likes et dislikes pour les sauces.
- * Si la requête correspond à ce qui est attendu, appel la fonction sauceServices() pour ajouter/retirer un likes ou un dislikes sur une sauce.
- * Sinon retourne un status 400 et un message d'erreur approprié.
+ * gestion des erreurs de validation des données de la requête.
+ * crée l'objet sauce complet de la nouvelle sauce avec les données présentes dans le body de la requête.
+ * Transmet l'objet sauce au service pour ajout en bdd.
  *
  * @param {req} req La requête reçue du front.
  * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
  */
-exports.likeSauce = (req, res) =>{
-  if((!req.body.userId || req.body.userId === '') || (!req.body.like || req.body.like === '')){
-    const message = `La requête est incomplète`
-    return res.status(400).json({ message })
-  }
+exports.createSauce = async (req, res, next) =>{
+    try {
+        
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
 
-  sauceServices.like(req, res)
+        const sauce = {
+            ...req.body,
+            imageUrl: `${req.protocol}://${req.get('host')}/back/images/${req.file.filename}`,
+            likes: 0,
+            dislikes: 0,
+            usersLiked: [],
+            usersDisliked: []
+        }
+
+        const message = await sauceServices.create(sauce)
+
+        return res.status(200).json({message})
+        
+    } catch (error) {
+
+        next(error)
+        
+    }
+}
+
+
+/**
+ * gestion des erreurs de validation des données de la requête.
+ * vérifie l'autorisation de l'utilisateur à modifier la sauce.
+ * supprime l'ancienne image stockée dans le serveur si une nouvelle est ajoutée.
+ * récupère les données de la sauce après modification dans le body de la requête et les transmets au service pour modification en bdd.
+ *
+ * @param {req} req La requête reçue du front.
+ * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
+ */
+exports.updateSauce = async (req, res, next) =>{
+    try {
+        
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const sauceId = req.params.id
+
+        const sauce = await sauceServices.getOne(sauceId)
+
+        if(sauce.userId !== req.auth.userId){
+            const error = new Error('Vous n`\'êtes pas autorisé à modifier cette sauce.')
+            error.name = errorName.auth
+            error.statusCode = 401
+            throw error
+        }
+
+        let newSauce = {
+            ...req.body
+        }
+
+        if(req.file){
+            fileUtils.deleteFile(sauce.imageUrl)
+            newSauce.imageUrl = `${req.protocol}://${req.get('host')}/back/images/${req.file.filename}`
+        }
+
+        const message = await sauceServices.update(sauceId, newSauce)
+
+        return res.status(200).json({ message })
+
+    } catch (error) {
+        
+        next(error)
+
+    }
+
+}
+
+
+/**
+ * gestion des erreurs de validation des données de la requête.
+ * vérifie l'autorisation de l'utilisateur à supprimer la sauce.
+ * supprime l'image de la sauce qui va être supprimée.
+ * transmet l'id de la sauce à supprimer au service pour suppresion.
+ *
+ * @param {req} req La requête reçue du front.
+ * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
+ */
+exports.deleteSauce = async (req, res, next) =>{
+    try {
+
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const sauceId = req.params.id
+        const userId = req.auth.userId
+
+        const sauce = await sauceServices.getOne(sauceId)
+
+        if(userId !== sauce.userId){
+            const error = new Error('Vous n`\'êtes pas autorisé à supprimer cette sauce.')
+            error.name = errorName.auth
+            error.statusCode = 401
+            throw error
+        }
+        
+        fileUtils.deleteFile(sauce.imageUrl)
+
+        const message = await sauceServices.delete(sauceId)
+
+        return res.status(200).json( message )
+        
+    } catch (error) {
+
+        next(error)
+
+    }
+
+}
+
+
+/**
+ * gestion des erreurs de validation des données de la requête.
+ * vérifie si la requête est une requête pour like / dislike / unlike ou undislike et exécute la fonction du service correspondante.
+ *
+ * @param {req} req La requête reçue du front.
+ * @param {res} res La réponse renvoyée au front.
+ * @param {next} function Méthode permettant d'envoyer toutes les erreurs retournées à l'errorHandler.
+ */
+exports.likeSauce = async (req, res, next) =>{
+
+    try {
+        
+        const validationErrors = validationResult(req)
+        if(!validationErrors.isEmpty()){
+            const message = validationErrors.array().map(validationError => validationError.msg).join(', ')
+            const error = new Error(message)
+            error.name = errorName.validation
+            error.statusCode = 400
+            throw error
+        }
+
+        const sauceId = req.params.id
+        const userId = req.body.userId
+        const like = req.body.like
+
+        const sauce = await sauceServices.getOne(sauceId)
+
+        let message
+
+        if(+like === 1){
+
+            message = await sauceServices.like(sauce, userId)
+
+        }else if(+like === -1){
+
+            message = await sauceServices.dislike(sauce, userId)
+
+        }else{
+
+            message = await sauceServices.unLike(sauce, userId)
+
+        }
+
+        return res.status(200).json(message)
+
+    } catch (error) {
+        
+        throw error
+
+    }
+
 }

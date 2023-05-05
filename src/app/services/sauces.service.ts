@@ -51,6 +51,7 @@ export class SaucesService {
   }
 
   createSauce(sauce: Sauce, image: File) {
+    console.log(image)
     const formData = new FormData();
     formData.append('sauce', JSON.stringify(sauce));
     formData.append('image', image);
